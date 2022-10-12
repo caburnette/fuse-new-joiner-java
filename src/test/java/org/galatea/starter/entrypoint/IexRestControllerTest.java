@@ -5,6 +5,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.Collections;
 import junitparams.JUnitParamsRunner;
 import lombok.RequiredArgsConstructor;
@@ -79,6 +80,41 @@ public class IexRestControllerTest extends ASpringTest {
             .accept(MediaType.APPLICATION_JSON_VALUE))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", is(Collections.emptyList())))
+        .andReturn();
+  }
+
+
+
+
+  @Test
+  public void testGetHistoricalPrice() throws Exception {
+
+    MvcResult result = this.mvc.perform(
+        org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+            .get("/iex/historicalPrice?symbol=FB")
+            // This URL will be hit by the MockMvc client. The result is configured in the file
+            // src/test/resources/wiremock/mappings/mapping-lastTradedPrice.json
+            .accept(MediaType.APPLICATION_JSON_VALUE))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.symbol", is("FB")))
+        .andExpect(jsonPath("$.close").value(new BigDecimal("261.86")))
+        .andExpect(jsonPath("$.high").value(new BigDecimal("264.81")))
+        .andExpect(jsonPath("$.low").value(new BigDecimal("262.03")))
+        .andExpect(jsonPath("$.open").value(new BigDecimal("265.07")))
+        .andExpect(jsonPath("$.volume").value(new BigInteger("17624513")))
+        .andExpect(jsonPath("$.date").value("2022-10-11"))
+        .andReturn();
+  }
+
+  @Test
+  public void testGetHistoricalPriceEmpty() throws Exception {
+
+    MvcResult result = this.mvc.perform(
+        org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+            .get("/iex/historicalPrice?symbol=")
+            .accept(MediaType.APPLICATION_JSON_VALUE))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$").doesNotExist())
         .andReturn();
   }
 }
