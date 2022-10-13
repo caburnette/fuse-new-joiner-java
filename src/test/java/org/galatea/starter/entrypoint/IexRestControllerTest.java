@@ -87,8 +87,8 @@ public class IexRestControllerTest extends ASpringTest {
 
 
   @Test
-  public void testGetHistoricalPrice() throws Exception {
-
+  public void testGetHistoricalPriceNoRangeNoDate() throws Exception {
+    //Yes Symbol No TimeSeries
     MvcResult result = this.mvc.perform(
         org.springframework.test.web.servlet.request.MockMvcRequestBuilders
             .get("/iex/historicalPrice?symbol=FB")
@@ -102,13 +102,52 @@ public class IexRestControllerTest extends ASpringTest {
         .andExpect(jsonPath("$.low").value(new BigDecimal("262.03")))
         .andExpect(jsonPath("$.open").value(new BigDecimal("265.07")))
         .andExpect(jsonPath("$.volume").value(new BigInteger("17624513")))
-        .andExpect(jsonPath("$.date").value("2022-10-11"))
+        .andExpect(jsonPath("$.date").value("1665446400000"))
+        .andReturn();
+  }
+
+  @Test
+  public void testGetHistoricalPriceWithRangeNoDate() throws Exception {
+    //No Symbol Yes TimeSeries
+    MvcResult result = this.mvc.perform(
+        org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+            .get("/iex/historicalPrice?symbol=FB&range=3m")
+            // This URL will be hit by the MockMvc client. The result is configured in the file
+            // src/test/resources/wiremock/mappings/mapping-lastTradedPrice.json
+            .accept(MediaType.APPLICATION_JSON_VALUE))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.symbol", is("FB")))
+        .andExpect(jsonPath("$.close").value(new BigDecimal("261.86")))
+        .andExpect(jsonPath("$.high").value(new BigDecimal("264.81")))
+        .andExpect(jsonPath("$.low").value(new BigDecimal("262.03")))
+        .andExpect(jsonPath("$.open").value(new BigDecimal("265.07")))
+        .andExpect(jsonPath("$.volume").value(new BigInteger("17624513")))
+        .andExpect(jsonPath("$.date").value("1665446400000"))
+        .andReturn();
+  }
+  @Test
+  public void testGetHistoricalPriceNoRangeWithDate() throws Exception {
+    //Yes Symbol Yes TimeSeries
+    MvcResult result = this.mvc.perform(
+        org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+            .get("/iex/historicalPrice?symbol=FB&date=20190220")
+            // This URL will be hit by the MockMvc client. The result is configured in the file
+            // src/test/resources/wiremock/mappings/mapping-lastTradedPrice.json
+            .accept(MediaType.APPLICATION_JSON_VALUE))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.symbol", is("FB")))
+        .andExpect(jsonPath("$.close").value(new BigDecimal("261.86")))
+        .andExpect(jsonPath("$.high").value(new BigDecimal("264.81")))
+        .andExpect(jsonPath("$.low").value(new BigDecimal("262.03")))
+        .andExpect(jsonPath("$.open").value(new BigDecimal("265.07")))
+        .andExpect(jsonPath("$.volume").value(new BigInteger("17624513")))
+        .andExpect(jsonPath("$.date").value("1665446400000"))
         .andReturn();
   }
 
   @Test
   public void testGetHistoricalPriceEmpty() throws Exception {
-
+    //No Symbol No TimeSeries
     MvcResult result = this.mvc.perform(
         org.springframework.test.web.servlet.request.MockMvcRequestBuilders
             .get("/iex/historicalPrice?symbol=")

@@ -58,8 +58,32 @@ public class IexRestController {
   @GetMapping(value = "${mvc.iex.getHistoricalPricePath}", produces = {
       MediaType.APPLICATION_JSON_VALUE})
   public IexHistoricalPrice getHistoricalPrice(
-      @RequestParam(value = "symbol") final String symbols) {
-    return iexService.getHistoricalPriceForSymbol(symbols);
+      @RequestParam(value = "symbol") final String symbols,
+      @RequestParam(value = "range", required = false) final String range,
+      @RequestParam(value = "date",required = false) final Integer date) {
+    IexHistoricalPrice price;
+
+    //3 Parameters: Symbol is REQUIRED, Date/Range are optional and cannot both be present
+    //If symbol == null, it will get passed back later
+
+    if(range == null) {
+      if(date == null) {
+        //No optional parameters
+        price = iexService.getHistoricalPriceForSymbol(symbols,null);
+      } else {
+        //Date is present
+        price = iexService.getHistoricalPriceForSymbol(symbols,(Object)date);
+      }
+    } else {
+      if(date == null) {
+        //Range is present
+        price = iexService.getHistoricalPriceForSymbol(symbols,(Object)range);
+      } else {
+        //Invalid because both date/range present
+        price = null;
+      }
+    }
+    return price;
   }
 
 }

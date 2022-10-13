@@ -43,27 +43,39 @@ public class IexService {
     if (CollectionUtils.isEmpty(symbols)) {
       return Collections.emptyList();
     } else {
-      return iexClient.getLastTradedPriceForSymbols(symbols.toArray(new String[0]));
+      List<IexLastTradedPrice> lst = iexClient.getLastTradedPriceForSymbols(symbols.toArray(new String[0]));
+      return lst;
     }
   }
 
-
-
   /**
-   * Get the historical price for the Symbol that is passed in.
+   * Get the historical price for the Symbol that is passed in, with an optional parameter
+   * representing either range or date
    *
    * @param symbol the list of symbols to get a historical traded price for.
+   * @param o Either a String range or an Integer date representing additional option for iex endpoint
    * @return the historical traded price objects for the Symbol that is passed in.
    */
-  public IexHistoricalPrice getHistoricalPriceForSymbol(String symbol) {
-    if (symbol.length() < 1) {
+  public IexHistoricalPrice getHistoricalPriceForSymbol(String symbol, Object o) {
+    //Symbol must exist
+    if(symbol == null || symbol.length() < 1) {
       return null;
-    } else {
-      IexHistoricalPrice histPriceList = iexClient.getHistoricalPriceTradedForSymbol(symbol);
-      return histPriceList;
-      }
+    }
 
+    if(o == null) {
+      return iexClient.getHistoricalPriceTradedForSymbol(symbol);
+    } else if (o instanceof String) {
+      String otherPiece = (String)o;
+      return iexClient.getHistoricalPriceTradedForSymbol(symbol,otherPiece);
+    } else if (o instanceof Integer) {
+      int otherPiece = ((Integer)o).intValue();
+      return iexClient.getHistoricalPriceTradedForSymbol(symbol,otherPiece);
+    } else {
+      //Invalid parameter
+      return null;
+    }
   }
+
 
 
 

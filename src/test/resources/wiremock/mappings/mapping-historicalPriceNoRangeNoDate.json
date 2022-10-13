@@ -2,7 +2,7 @@
   "id" : "16369e06-78d4-40a7-98d1-3dbe0ba82fc7",
   "name" : "tops_hist",
   "request" : {
-    "url" : "/stock/FB/chart",
+    "url" : "/stock/FB/chart?token=%24%7Bspring.rest.token%7D",
     "method" : "GET"
   },
   "response" : {

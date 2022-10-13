@@ -49,6 +49,7 @@ spring:
       # this points at the local WireMock server in the test environment.
       iexBasePath: http://localhost:${wiremock.server.port}/
 
+
 ---
 # Dev properties go here
 spring:
@@ -57,7 +58,8 @@ spring:
       username: sa
       password:
    rest:
-      iexBasePath: https://api.iextrading.com/1.0
+      iexBasePath: https://cloud.iexapis.com/stable
+      token: pk_760c0113b01f4ea9b3dab9f74a9d0dfa
 # set debug to get spring to log the classpath (and other things) on startup
 debug: true
 

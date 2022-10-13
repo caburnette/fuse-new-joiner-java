@@ -2,6 +2,8 @@ package org.galatea.starter.domain;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.format.DateTimeFormatter;
+import java.util.Date;
 import lombok.Builder;
 import lombok.Data;
 
@@ -14,5 +16,5 @@ public class IexHistoricalPrice {
   private BigDecimal low;
   private BigDecimal open;
   private BigInteger volume;
-  private String date;
+  private Date date;
 }
