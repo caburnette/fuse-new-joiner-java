@@ -65,13 +65,15 @@ public class IexService {
     if(o == null) {
       return iexClient.getHistoricalPriceTradedForSymbol(symbol);
     } else if (o instanceof String) {
+      //Range has been specified, (Iex can do the error handling)
       String otherPiece = (String)o;
       return iexClient.getHistoricalPriceTradedForSymbol(symbol,otherPiece);
     } else if (o instanceof Integer) {
+      //Date has been specified
       int otherPiece = ((Integer)o).intValue();
       return iexClient.getHistoricalPriceTradedForSymbol(symbol,otherPiece);
     } else {
-      //Invalid parameter
+      //Invalid parameter, not a range or date
       return null;
     }
   }

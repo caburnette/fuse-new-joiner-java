@@ -88,7 +88,7 @@ public class IexRestControllerTest extends ASpringTest {
 
   @Test
   public void testGetHistoricalPriceNoRangeNoDate() throws Exception {
-    //Yes Symbol No TimeSeries
+    //Tests functionality with No Range or Date
     MvcResult result = this.mvc.perform(
         org.springframework.test.web.servlet.request.MockMvcRequestBuilders
             .get("/iex/historicalPrice?symbol=FB")
@@ -108,7 +108,7 @@ public class IexRestControllerTest extends ASpringTest {
 
   @Test
   public void testGetHistoricalPriceWithRangeNoDate() throws Exception {
-    //No Symbol Yes TimeSeries
+    //Tests functionality with Range specified
     MvcResult result = this.mvc.perform(
         org.springframework.test.web.servlet.request.MockMvcRequestBuilders
             .get("/iex/historicalPrice?symbol=FB&range=3m")
@@ -117,17 +117,17 @@ public class IexRestControllerTest extends ASpringTest {
             .accept(MediaType.APPLICATION_JSON_VALUE))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.symbol", is("FB")))
-        .andExpect(jsonPath("$.close").value(new BigDecimal("261.86")))
-        .andExpect(jsonPath("$.high").value(new BigDecimal("264.81")))
-        .andExpect(jsonPath("$.low").value(new BigDecimal("262.03")))
-        .andExpect(jsonPath("$.open").value(new BigDecimal("265.07")))
-        .andExpect(jsonPath("$.volume").value(new BigInteger("17624513")))
+        .andExpect(jsonPath("$.close").value(new BigDecimal("280.2")))
+        .andExpect(jsonPath("$.high").value(new BigDecimal("281.3")))
+        .andExpect(jsonPath("$.low").value(new BigDecimal("279.3")))
+        .andExpect(jsonPath("$.open").value(new BigDecimal("280.1")))
+        .andExpect(jsonPath("$.volume").value(new BigInteger("17624520")))
         .andExpect(jsonPath("$.date").value("1665446400000"))
         .andReturn();
   }
   @Test
   public void testGetHistoricalPriceNoRangeWithDate() throws Exception {
-    //Yes Symbol Yes TimeSeries
+    //Tests functionality with Date specified
     MvcResult result = this.mvc.perform(
         org.springframework.test.web.servlet.request.MockMvcRequestBuilders
             .get("/iex/historicalPrice?symbol=FB&date=20190220")
@@ -136,18 +136,19 @@ public class IexRestControllerTest extends ASpringTest {
             .accept(MediaType.APPLICATION_JSON_VALUE))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.symbol", is("FB")))
-        .andExpect(jsonPath("$.close").value(new BigDecimal("261.86")))
-        .andExpect(jsonPath("$.high").value(new BigDecimal("264.81")))
-        .andExpect(jsonPath("$.low").value(new BigDecimal("262.03")))
-        .andExpect(jsonPath("$.open").value(new BigDecimal("265.07")))
-        .andExpect(jsonPath("$.volume").value(new BigInteger("17624513")))
-        .andExpect(jsonPath("$.date").value("1665446400000"))
+        .andExpect(jsonPath("$.close").value(new BigDecimal("270.2")))
+        .andExpect(jsonPath("$.high").value(new BigDecimal("271.34")))
+        .andExpect(jsonPath("$.low").value(new BigDecimal("272.31")))
+        .andExpect(jsonPath("$.open").value(new BigDecimal("270.34")))
+        .andExpect(jsonPath("$.volume").value(new BigInteger("17624356")))
+        .andExpect(jsonPath("$.date").value("1668124800000"))
         .andReturn();
   }
 
   @Test
   public void testGetHistoricalPriceEmpty() throws Exception {
-    //No Symbol No TimeSeries
+    //Tests functionality with No symbol specified
+    // Note that this is the same as testing with no Symbol but adding a date|range
     MvcResult result = this.mvc.perform(
         org.springframework.test.web.servlet.request.MockMvcRequestBuilders
             .get("/iex/historicalPrice?symbol=")

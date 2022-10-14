@@ -7,8 +7,8 @@
   },
   "response" : {
     "status" : 200,
-    "jsonBody" : {"symbol":"FB","date":"2022-10-11", "open":265.07,"close":261.86,"high":264.81,"low":262.03,
-                    "volume":17624513,"uOpen":269.89,"uClose":267.14,"uHigh":263.63,"uLow":259.87,"uVolume":17986609,
+    "jsonBody" : {"symbol":"FB","date":"2022-10-11", "open":280.1,"close":280.2,"high":281.3,"low":279.3,
+                    "volume":17624520,"uOpen":269.89,"uClose":267.14,"uHigh":263.63,"uLow":259.87,"uVolume":17986609,
                     "change":0.73,"changePercent":0.2807,"label":"Oct 11","changeOverTime":0.103373,"marketChangeOverTime":0.10,
                      "fOpen":265.07,"fClose":261.86,"fHigh":264.81,"fLow":262.03, "fVolume":17624513},
     "headers" : {
