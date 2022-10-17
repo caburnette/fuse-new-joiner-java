@@ -58,6 +58,10 @@
 			</exclusions>
 		</dependency>
 
+		<dependency>
+		<groupId>org.hibernate</groupId>
+		<artifactId>hibernate-validator</artifactId>
+		</dependency>
 		<!-- Use log4j instead of logback -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
