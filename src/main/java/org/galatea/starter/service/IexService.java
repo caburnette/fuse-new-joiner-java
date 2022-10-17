@@ -1,8 +1,8 @@
 package org.galatea.starter.service;
 
 import java.util.Collections;
-import java.util.LinkedList;
 import java.util.List;
+import java.util.Optional;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,7 +43,8 @@ public class IexService {
     if (CollectionUtils.isEmpty(symbols)) {
       return Collections.emptyList();
     } else {
-      List<IexLastTradedPrice> lst = iexClient.getLastTradedPriceForSymbols(symbols.toArray(new String[0]));
+      List<IexLastTradedPrice> lst =
+          iexClient.getLastTradedPriceForSymbols(symbols.toArray(new String[0]));
       return lst;
     }
   }
@@ -53,32 +54,29 @@ public class IexService {
    * representing either range or date
    *
    * @param symbol the list of symbols to get a historical traded price for.
-   * @param o Either a String range or an Integer date representing additional option for iex endpoint
+   * @param date Optional Parameter: The date the price should be measured on
+   * @param range Optional Parameter: Time range to measure price over
    * @return the historical traded price objects for the Symbol that is passed in.
    */
-  public IexHistoricalPrice getHistoricalPriceForSymbol(String symbol, Object o) {
-    //Symbol must exist
-    if(symbol == null || symbol.length() < 1) {
-      return null;
+  public IexHistoricalPrice getHistoricalPriceForSymbol(String symbol, Optional<String> date,
+      Optional<Integer> range) {
+
+    if (date.isPresent()) {
+      //Date has been specified,
+      String dateVal = date.get();
+
+      return iexClient.getHistoricalPriceTradedForSymbol(symbol, dateVal);
     }
 
-    if(o == null) {
-      return iexClient.getHistoricalPriceTradedForSymbol(symbol);
-    } else if (o instanceof String) {
-      //Range has been specified, (Iex can do the error handling)
-      String otherPiece = (String)o;
-      return iexClient.getHistoricalPriceTradedForSymbol(symbol,otherPiece);
-    } else if (o instanceof Integer) {
-      //Date has been specified
-      int otherPiece = ((Integer)o).intValue();
-      return iexClient.getHistoricalPriceTradedForSymbol(symbol,otherPiece);
-    } else {
-      //Invalid parameter, not a range or date
-      return null;
+    if (range.isPresent()) {
+      //Range has been specified
+      int rangeVal = range.get().intValue();
+      return iexClient.getHistoricalPriceTradedForSymbol(symbol, rangeVal);
     }
+    return iexClient.getHistoricalPriceTradedForSymbol(symbol);
+
+
   }
-
-
 
 
 }
