@@ -1,8 +1,13 @@
 package org.galatea.starter.entrypoint;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Optional;
+import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import lombok.NonNull;
@@ -76,29 +81,44 @@ public class IexRestController {
   @GetMapping(value = "${mvc.iex.getHistoricalPricePath}", produces = {
       MediaType.APPLICATION_JSON_VALUE})
   public IexHistoricalPrice getHistoricalPrice(
-      @RequestParam(value = "symbol") @NotNull final String symbols,
+      @RequestParam(value = "symbol") @NotNull @NotEmpty final String symbols,
       @RequestParam(value = "range", required = false) final Optional<@Pattern.List(
           {@Pattern(regexp = ".*"), @Pattern(regexp = VALID_DATES)}) String> range,
       @RequestParam(value = "date", required = false) final Optional<Integer> date) {
     IexHistoricalPrice price;
-//@Pattern.List({@Pattern(regexp =".*"), @Pattern (regexp = VALID_DATES)})
+
     //3 Parameters: Symbol is REQUIRED, Date/Range are optional and cannot both be present
 
     if (date.isPresent()) {
+      //yyyyMMdd
       int dateVal = date.get();
 
       //Max validation depends on current time:
-      if (dateVal >= System.currentTimeMillis()) {
-        throw new IllegalArgumentException("Cannot get a price for a time in the future");
+      long timeOfNow = Long.parseLong(LocalDate.now().toString().replace("-", ""));
+      if (timeOfNow < dateVal) {
+        throw new IllegalArgumentException("Cannot retrieve a price from the future");
       }
 
       //Min validation depends on current time:
       long fiveYearsAgo = Long.parseLong(LocalDate.now().toString().replace("-", ""));
-      fiveYearsAgo -= 500000;
-      if (dateVal <= fiveYearsAgo) {
-        throw new IllegalArgumentException(
-            "Cannot go back more than 5 years: " + "Expected > " + fiveYearsAgo + " was: "
-                + dateVal);
+
+      fiveYearsAgo -= 50000;
+
+      //In test: Dummy value. In Dev: fiveYearsAgo
+      //Unix Timestamp to LocalDate: https://stackoverflow.com/questions/35183146/how-can-i-create-a-java-8-localdate-from-a-long-epoch-time-in-milliseconds
+      LocalDate fiveYearsAgoDate =
+          Instant.ofEpochMilli(fiveYearsAgo).atZone(ZoneId.systemDefault()).toLocalDate();
+
+      DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+      try {
+        LocalDate provided = LocalDate.parse("" + dateVal, formatter);
+        if (fiveYearsAgoDate.compareTo(provided) > 0) {
+          throw new IllegalArgumentException(
+              "Cannot go back more than 5 years: " + "Expected > " + fiveYearsAgo + " was: "
+                  + dateVal);
+        }
+      } catch (DateTimeParseException e) {
+        throw new IllegalArgumentException("The date you entered cannot be parsed: " + dateVal);
       }
 
       //Only Date or Range may be present.

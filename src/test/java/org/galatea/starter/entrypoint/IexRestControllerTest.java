@@ -1,12 +1,15 @@
 package org.galatea.starter.entrypoint;
 
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Collections;
+import javax.validation.ConstraintViolationException;
 import junitparams.JUnitParamsRunner;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -142,6 +145,7 @@ public class IexRestControllerTest extends ASpringTest {
         .andExpect(jsonPath("$.volume").value(new BigInteger("17624356")))
         .andExpect(jsonPath("$.date").value("2022-11-11"))
         .andReturn();
+
   }
 
   @Test
@@ -152,8 +156,14 @@ public class IexRestControllerTest extends ASpringTest {
             org.springframework.test.web.servlet.request.MockMvcRequestBuilders
                 .get("/iex/historicalPrice?symbol=")
                 .accept(MediaType.APPLICATION_JSON_VALUE))
-        .andExpect(status().isOk())
-        .andExpect(jsonPath("$").doesNotExist())
+        .andExpect(status().is4xxClientError())
         .andReturn();
+
+    ConstraintViolationException expectedException =
+        (ConstraintViolationException) result.getResolvedException();
+    assertNotNull(expectedException);
+    assertEquals("getHistoricalPrice.symbols: must not be empty", expectedException.getMessage());
+
+
   }
 }
