@@ -27,8 +27,7 @@ public interface IexClient {
   List<IexSymbol> getAllSymbols();
 
   /**
-   * Get the last traded price for each stock symbol passed in. See
-   * https://iextrading.com/developer/docs/#last.
+   * Get the last traded price for each stock symbol passed in. See https://iextrading.com/developer/docs/#last.
    *
    * @param symbols stock symbols to get last traded price for.
    * @return a list of the last traded price for each of the symbols passed in.
@@ -38,8 +37,7 @@ public interface IexClient {
 
 
   /**
-   * Get the historical price for each stock symbol passed in. See
-   * https://iextrading.com/developer/docs/#historical-prices.
+   * Get the historical price for each stock symbol passed in. See https://iextrading.com/developer/docs/#historical-prices.
    *
    * @param symbol stock symbols to get last traded price for.
    * @return a list of the last traded price for each of the symbols passed in.
@@ -48,8 +46,7 @@ public interface IexClient {
   IexHistoricalPrice getHistoricalPriceTradedForSymbol(@PathVariable String symbol);
 
   /**
-   * Get the historical price for each stock symbol passed in. See
-   * https://iextrading.com/developer/docs/#historical-prices.
+   * Get the historical price for each stock symbol passed in. See https://iextrading.com/developer/docs/#historical-prices.
    *
    * @param symbol stock symbols to get last traded price for.
    * @param range how far back the historical prices should be measured
@@ -61,8 +58,7 @@ public interface IexClient {
 
 
   /**
-   * Get the historical price for each stock symbol passed in. See
-   * https://iextrading.com/developer/docs/#historical-prices.
+   * Get the historical price for each stock symbol passed in. See https://iextrading.com/developer/docs/#historical-prices.
    *
    * @param symbol stock symbols to get last traded price for.
    * @param date the date these historical prices were measured as a timestamp
@@ -70,8 +66,8 @@ public interface IexClient {
    */
   @GetMapping(path = "/stock/{symbol}/chart/date/{date}?token=" + TOKEN,
       params = {"symbol", "date"})
-  IexHistoricalPrice getHistoricalPriceTradedForSymbol(@PathVariable String symbol,
-      @PathVariable int date);
+  IexHistoricalPrice getHistoricalPriceTradedForSymbolWithDate(@PathVariable String symbol,
+      @PathVariable String date);
 
 
 }

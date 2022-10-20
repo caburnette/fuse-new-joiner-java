@@ -43,9 +43,7 @@ public class IexService {
     if (CollectionUtils.isEmpty(symbols)) {
       return Collections.emptyList();
     } else {
-      List<IexLastTradedPrice> lst =
-          iexClient.getLastTradedPriceForSymbols(symbols.toArray(new String[0]));
-      return lst;
+      return iexClient.getLastTradedPriceForSymbols(symbols.toArray(new String[0]));
     }
   }
 
@@ -59,18 +57,18 @@ public class IexService {
    * @return the historical traded price objects for the Symbol that is passed in.
    */
   public IexHistoricalPrice getHistoricalPriceForSymbol(String symbol, Optional<String> date,
-      Optional<Integer> range) {
+      Optional<String> range) {
 
     if (date.isPresent()) {
       //Date has been specified,
       String dateVal = date.get();
 
-      return iexClient.getHistoricalPriceTradedForSymbol(symbol, dateVal);
+      return iexClient.getHistoricalPriceTradedForSymbolWithDate(symbol, dateVal);
     }
 
     if (range.isPresent()) {
       //Range has been specified
-      int rangeVal = range.get().intValue();
+      String rangeVal = range.get();
       return iexClient.getHistoricalPriceTradedForSymbol(symbol, rangeVal);
     }
     return iexClient.getHistoricalPriceTradedForSymbol(symbol);
