@@ -1,14 +1,13 @@
 package org.galatea.starter.entrypoint;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Optional;
 import javax.validation.constraints.NotEmpty;
-import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Pattern;
 import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +18,7 @@ import org.galatea.starter.domain.IexHistoricalPrice;
 import org.galatea.starter.domain.IexLastTradedPrice;
 import org.galatea.starter.domain.IexSymbol;
 import org.galatea.starter.service.IexService;
+import org.galatea.starter.utils.clock.ClockWrapper;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -42,7 +42,9 @@ public class IexRestController {
       + "^0[1-9]dm?$|"
       + "^[1-2][1-9]?dm?$";
 
+  private final String DATE_FORMAT = "yyyyMMdd";
 
+  private Clock clock = ClockWrapper.getClock();
   @NonNull
   private IexService iexService;
 
@@ -81,41 +83,35 @@ public class IexRestController {
   @GetMapping(value = "${mvc.iex.getHistoricalPricePath}", produces = {
       MediaType.APPLICATION_JSON_VALUE})
   public IexHistoricalPrice getHistoricalPrice(
-      @RequestParam(value = "symbol") @NotNull @NotEmpty final String symbols,
+      @RequestParam(value = "symbol") @NotEmpty final String symbols,
       @RequestParam(value = "range", required = false) final Optional<@Pattern.List(
           {@Pattern(regexp = ".*"), @Pattern(regexp = VALID_DATES)}) String> range,
-      @RequestParam(value = "date", required = false) final Optional<Integer> date) {
+      @RequestParam(value = "date", required = false) final Optional<String> date) {
     IexHistoricalPrice price;
 
     //3 Parameters: Symbol is REQUIRED, Date/Range are optional and cannot both be present
 
     if (date.isPresent()) {
       //yyyyMMdd
-      int dateVal = date.get();
+      String dateVal = date.get();
 
-      //Max validation depends on current time:
-      long timeOfNow = Long.parseLong(LocalDate.now().toString().replace("-", ""));
-      if (timeOfNow < dateVal) {
-        throw new IllegalArgumentException("Cannot retrieve a price from the future");
-      }
-
-      //Min validation depends on current time:
-      long fiveYearsAgo = Long.parseLong(LocalDate.now().toString().replace("-", ""));
-
-      fiveYearsAgo -= 50000;
-
-      //In test: Dummy value. In Dev: fiveYearsAgo
       //Unix Timestamp to LocalDate: https://stackoverflow.com/questions/35183146/how-can-i-create-a-java-8-localdate-from-a-long-epoch-time-in-milliseconds
       LocalDate fiveYearsAgoDate =
-          Instant.ofEpochMilli(fiveYearsAgo).atZone(ZoneId.systemDefault()).toLocalDate();
+          LocalDate.ofInstant(Instant.ofEpochMilli(clock.millis()), clock.getZone()).minusYears(5);
 
-      DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd");
+      DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_FORMAT);
       try {
         LocalDate provided = LocalDate.parse("" + dateVal, formatter);
         if (fiveYearsAgoDate.compareTo(provided) > 0) {
           throw new IllegalArgumentException(
-              "Cannot go back more than 5 years: " + "Expected > " + fiveYearsAgo + " was: "
-                  + dateVal);
+              "Cannot go back more than 5 years: " + "Expected > " + fiveYearsAgoDate + " was: "
+                  + provided);
+        }
+
+        //Max validation depends on current time:
+        LocalDate nowDate = LocalDate.now();
+        if (provided.compareTo(nowDate) > 0) {
+          throw new IllegalArgumentException("Cannot retrieve a price from the future");
         }
       } catch (DateTimeParseException e) {
         throw new IllegalArgumentException("The date you entered cannot be parsed: " + dateVal);
@@ -127,7 +123,7 @@ public class IexRestController {
       }
     }
 
-    price = iexService.getHistoricalPriceForSymbol(symbols, range, date);
+    price = iexService.getHistoricalPriceForSymbol(symbols, date, range);
 
     return price;
   }
