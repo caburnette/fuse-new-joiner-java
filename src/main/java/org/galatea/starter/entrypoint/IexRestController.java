@@ -15,9 +15,13 @@ import lombok.extern.slf4j.Slf4j;
 import net.sf.aspect4log.Log;
 import net.sf.aspect4log.Log.Level;
 import org.galatea.starter.domain.IexHistoricalPrice;
+import org.galatea.starter.domain.IexHistoricalPriceRequest;
 import org.galatea.starter.domain.IexLastTradedPrice;
 import org.galatea.starter.domain.IexSymbol;
+import org.galatea.starter.service.HistoricalPriceService;
+import org.galatea.starter.service.HistoricalRequestService;
 import org.galatea.starter.service.IexService;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -48,6 +52,11 @@ public class IexRestController {
   private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_FORMAT);
   @NonNull
   private IexService iexService;
+
+  @NonNull
+  private HistoricalPriceService priceService;
+  @NonNull
+  private HistoricalRequestService dbService;
 
   /**
    * Exposes an endpoint to get all of the symbols available on IEX.
@@ -92,6 +101,10 @@ public class IexRestController {
 
     //3 Parameters: Symbol is REQUIRED, Date/Range are optional and cannot both be present
 
+
+
+
+
     if (date.isPresent()) {
       //yyyyMMdd
       String dateVal = date.get();
@@ -123,8 +136,48 @@ public class IexRestController {
         throw new IllegalArgumentException("Cannot specify both range and date.");
       }
     }
+    for(int i = 0; i < 20; i++){System.out.println("");}
+
+
+    //Before making Iex call, check if request has been cached
+    String option = date.isPresent() ? date.get() : range.isPresent() ? range.get() : null;
+    List<IexHistoricalPriceRequest> cachedRequests = dbService.findByOption(option);
+    System.out.println("Finished retrieving prices: ");
+    for(IexHistoricalPriceRequest req : cachedRequests) {
+      System.out.println(req);
+    }
+    for(int i = 0; i < 20; i++){System.out.println("");}
+
+    if(cachedRequests != null && !cachedRequests.isEmpty()) {
+      for(IexHistoricalPriceRequest req : cachedRequests) {
+        IexHistoricalPrice retPrice = req.getPrice();
+        if (retPrice.getSymbol().equals(symbols)) {
+          System.out.println("Request found: ");
+          System.out.println(retPrice);
+          return retPrice;
+        }
+      }
+    }
 
     price = iexService.getHistoricalPriceForSymbol(symbols, date, range);
+
+
+
+    //After making Iex call, cache this request
+    IexHistoricalPriceRequest newReq = new IexHistoricalPriceRequest();
+    newReq.setPrice(price);
+
+
+    newReq.setOption(option);
+    for(int i = 0; i < 60; i++){System.out.println("");}
+    System.out.println("Caching Option: ");
+    System.out.println("Caching Price:");
+    System.out.println(newReq.getPrice());
+    System.out.println(newReq.getOption());
+    for(int i = 0; i < 60; i++){System.out.println("");}
+    priceService.save(price);
+
+    dbService.save(newReq);
 
     return price;
   }
