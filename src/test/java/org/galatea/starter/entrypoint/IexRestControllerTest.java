@@ -10,6 +10,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.math.BigDecimal;
 import java.math.BigInteger;
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Collections;
 import java.util.List;
 import javax.validation.ConstraintViolationException;
@@ -18,9 +22,9 @@ import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.galatea.starter.ASpringTest;
+import org.junit.Before;
 import org.galatea.starter.domain.IexHistoricalPriceRequest;
 import org.galatea.starter.service.HistoricalRequestService;
-import org.galatea.starter.utils.clock.ClockWrapper;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -29,6 +33,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 import org.springframework.http.MediaType;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -53,16 +58,27 @@ public class IexRestControllerTest extends ASpringTest {
   private MockMvc mvc;
 
 
+  @Autowired
+  private IexRestController iexController;
+
+  private final Clock defaultClock = Clock.systemDefaultZone();
+
   @Mock
   private HistoricalRequestService dbService;
+  
+  @Before
+  public void setup() {
+    ReflectionTestUtils.setField(iexController, "clock", defaultClock);
+  }
+
 
   @Test
   public void testGetSymbolsEndpoint() throws Exception {
     MvcResult result = this.mvc.perform(
-        // note that we were are testing the fuse REST end point here, not the IEX end point.
-        // the fuse end point in turn calls the IEX end point, which is WireMocked for this test.
-        org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/iex/symbols")
-            .accept(MediaType.APPLICATION_JSON_VALUE))
+            // note that we were are testing the fuse REST end point here, not the IEX end point.
+            // the fuse end point in turn calls the IEX end point, which is WireMocked for this test.
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/iex/symbols")
+                .accept(MediaType.APPLICATION_JSON_VALUE))
         .andExpect(status().isOk())
         // some simple validations, in practice I would expect these to be much more comprehensive.
         .andExpect(jsonPath("$[0].symbol", is("A")))
@@ -75,11 +91,11 @@ public class IexRestControllerTest extends ASpringTest {
   public void testGetLastTradedPrice() throws Exception {
 
     MvcResult result = this.mvc.perform(
-        org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-            .get("/iex/lastTradedPrice?symbols=FB")
-            // This URL will be hit by the MockMvc client. The result is configured in the file
-            // src/test/resources/wiremock/mappings/mapping-lastTradedPrice.json
-            .accept(MediaType.APPLICATION_JSON_VALUE))
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .get("/iex/lastTradedPrice?symbols=FB")
+                // This URL will be hit by the MockMvc client. The result is configured in the file
+                // src/test/resources/wiremock/mappings/mapping-lastTradedPrice.json
+                .accept(MediaType.APPLICATION_JSON_VALUE))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].symbol", is("FB")))
         .andExpect(jsonPath("$[0].price").value(new BigDecimal("186.34")))
@@ -90,9 +106,9 @@ public class IexRestControllerTest extends ASpringTest {
   public void testGetLastTradedPriceEmpty() throws Exception {
 
     MvcResult result = this.mvc.perform(
-        org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-            .get("/iex/lastTradedPrice?symbols=")
-            .accept(MediaType.APPLICATION_JSON_VALUE))
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .get("/iex/lastTradedPrice?symbols=")
+                .accept(MediaType.APPLICATION_JSON_VALUE))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", is(Collections.emptyList())))
         .andReturn();
@@ -103,11 +119,11 @@ public class IexRestControllerTest extends ASpringTest {
   public void testGetHistoricalPriceNoRangeNoDate() throws Exception {
     //Tests functionality with No Range or Date
     MvcResult result = this.mvc.perform(
-        org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-            .get("/iex/historicalPrice?symbol=FB")
-            // This URL will be hit by the MockMvc client. The result is configured in the file
-            // src/test/resources/wiremock/mappings/mapping-lastTradedPrice.json
-            .accept(MediaType.APPLICATION_JSON_VALUE))
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .get("/iex/historicalPrice?symbol=FB")
+                // This URL will be hit by the MockMvc client. The result is configured in the file
+                // src/test/resources/wiremock/mappings/mapping-lastTradedPrice.json
+                .accept(MediaType.APPLICATION_JSON_VALUE))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.symbol", is("FB")))
         .andExpect(jsonPath("$.close").value(new BigDecimal("261.86")))
@@ -124,11 +140,11 @@ public class IexRestControllerTest extends ASpringTest {
   public void testGetHistoricalPriceWithRangeNoDate() throws Exception {
     //Tests functionality with Range specified
     MvcResult result = this.mvc.perform(
-        org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-            .get("/iex/historicalPrice?symbol=FB&range=3m")
-            // This URL will be hit by the MockMvc client. The result is configured in the file
-            // src/test/resources/wiremock/mappings/mapping-lastTradedPrice.json
-            .accept(MediaType.APPLICATION_JSON_VALUE))
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .get("/iex/historicalPrice?symbol=FB&range=3m")
+                // This URL will be hit by the MockMvc client. The result is configured in the file
+                // src/test/resources/wiremock/mappings/mapping-lastTradedPrice.json
+                .accept(MediaType.APPLICATION_JSON_VALUE))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.symbol", is("FB")))
         .andExpect(jsonPath("$.close").value(new BigDecimal("280.2")))
@@ -144,13 +160,17 @@ public class IexRestControllerTest extends ASpringTest {
   public void testGetHistoricalPriceNoRangeWithDate() throws Exception {
     //Tests functionality with Date specified
 
-    ClockWrapper.useFixedClockAt("2022-11-20");
+    Clock testClock =
+        Clock.fixed(LocalDate.parse("2022-11-20").atStartOfDay().toInstant(ZoneOffset.UTC),
+            ZoneId.systemDefault());
+
+    ReflectionTestUtils.setField(iexController, "clock", testClock);
     MvcResult result = this.mvc.perform(
-        org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-            .get("/iex/historicalPrice?symbol=FB&date=20190220")
-            // This URL will be hit by the MockMvc client. The result is configured in the file
-            // src/test/resources/wiremock/mappings/mapping-lastTradedPrice.json
-            .accept(MediaType.APPLICATION_JSON_VALUE))
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .get("/iex/historicalPrice?symbol=FB&date=20190220")
+                // This URL will be hit by the MockMvc client. The result is configured in the file
+                // src/test/resources/wiremock/mappings/mapping-lastTradedPrice.json
+                .accept(MediaType.APPLICATION_JSON_VALUE))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.symbol", is("FB")))
         .andExpect(jsonPath("$.close").value(new BigDecimal("270.2")))
@@ -168,9 +188,9 @@ public class IexRestControllerTest extends ASpringTest {
     //Tests functionality with No symbol specified
     // Note that this is the same as testing with no Symbol but adding a date|range
     MvcResult result = this.mvc.perform(
-        org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-            .get("/iex/historicalPrice?symbol=")
-            .accept(MediaType.APPLICATION_JSON_VALUE))
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .get("/iex/historicalPrice?symbol=")
+                .accept(MediaType.APPLICATION_JSON_VALUE))
         .andExpect(status().is4xxClientError())
         .andReturn();
 
