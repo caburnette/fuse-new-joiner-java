@@ -18,7 +18,6 @@ import org.galatea.starter.domain.IexHistoricalPrice;
 import org.galatea.starter.domain.IexLastTradedPrice;
 import org.galatea.starter.domain.IexSymbol;
 import org.galatea.starter.service.IexService;
-import org.galatea.starter.utils.clock.ClockWrapper;
 import org.springframework.http.MediaType;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -44,7 +43,9 @@ public class IexRestController {
 
   private final String DATE_FORMAT = "yyyyMMdd";
 
-  private Clock clock = ClockWrapper.getClock();
+  private final Clock clock = Clock.systemDefaultZone();
+
+  private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_FORMAT);
   @NonNull
   private IexService iexService;
 
@@ -99,9 +100,9 @@ public class IexRestController {
       LocalDate fiveYearsAgoDate =
           LocalDate.ofInstant(Instant.ofEpochMilli(clock.millis()), clock.getZone()).minusYears(5);
 
-      DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DATE_FORMAT);
+
       try {
-        LocalDate provided = LocalDate.parse("" + dateVal, formatter);
+        LocalDate provided = LocalDate.parse(dateVal, formatter);
         if (fiveYearsAgoDate.compareTo(provided) > 0) {
           throw new IllegalArgumentException(
               "Cannot go back more than 5 years: " + "Expected > " + fiveYearsAgoDate + " was: "
