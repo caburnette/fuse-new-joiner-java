@@ -58,10 +58,21 @@
 			</exclusions>
 		</dependency>
 
+		<dependency>
+		<groupId>org.hibernate</groupId>
+		<artifactId>hibernate-validator</artifactId>
+		</dependency>
 		<!-- Use log4j instead of logback -->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-log4j2</artifactId>
+		</dependency>
+
+		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-test</artifactId>
+			<version>5.1.2.RELEASE</version>
+			<scope>test</scope>
 		</dependency>
 
 		<dependency>

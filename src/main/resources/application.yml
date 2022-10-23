@@ -11,10 +11,20 @@ spring:
       # http://www.h2database.com/html/tutorial.html#using_server
       url: jdbc:h2:mem:testtest
       driver-class-name: org.h2.Driver
+   second-datasource:
+      url: postgresql://localhost:5432/Fuse?createDatabaseIfNotExist=true
+      username: postgres
+      password: password
    jpa:
       hibernate:
          ddl-auto: update
       database-platform: org.hibernate.dialect.MySQL5Dialect
+      second-database-platform: org.hibernate.dialect.PostgreSQLDialect
+      properties:
+         hibernate:
+            jdbc:
+               lob:
+                  non_contextual_creation: true
 
 mvc:
    settleMissionPath: /settlementEngine
@@ -25,6 +35,7 @@ mvc:
    iex:
       getAllSymbolsPath: /iex/symbols
       getLastTradedPricePath: /iex/lastTradedPrice
+      getHistoricalPricePath: /iex/historicalPrice
    max-size-trace-payload: 50000
 jms:
    listener-concurrency: 1-5
@@ -47,6 +58,7 @@ spring:
    rest:
       # this points at the local WireMock server in the test environment.
       iexBasePath: http://localhost:${wiremock.server.port}/
+      token: iexAPIToken
 
 ---
 # Dev properties go here
@@ -56,7 +68,9 @@ spring:
       username: sa
       password:
    rest:
-      iexBasePath: https://api.iextrading.com/1.0
+      iexBasePath: https://cloud.iexapis.com/stable
+      token:  pk_760c0113b01f4ea9b3dab9f74a9d0dfa
+
 # set debug to get spring to log the classpath (and other things) on startup
 debug: true
 

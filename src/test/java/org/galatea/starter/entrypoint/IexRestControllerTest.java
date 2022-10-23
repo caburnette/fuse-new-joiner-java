@@ -1,22 +1,39 @@
 package org.galatea.starter.entrypoint;
 
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Collections;
+import java.util.List;
+import javax.validation.ConstraintViolationException;
 import junitparams.JUnitParamsRunner;
+import lombok.NonNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.galatea.starter.ASpringTest;
+import org.junit.Before;
+import org.galatea.starter.domain.IexHistoricalPriceRequest;
+import org.galatea.starter.service.HistoricalRequestService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.cloud.contract.wiremock.AutoConfigureWireMock;
 import org.springframework.http.MediaType;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -40,13 +57,28 @@ public class IexRestControllerTest extends ASpringTest {
   @Autowired
   private MockMvc mvc;
 
+
+  @Autowired
+  private IexRestController iexController;
+
+  private final Clock defaultClock = Clock.systemDefaultZone();
+
+  @Mock
+  private HistoricalRequestService dbService;
+  
+  @Before
+  public void setup() {
+    ReflectionTestUtils.setField(iexController, "clock", defaultClock);
+  }
+
+
   @Test
   public void testGetSymbolsEndpoint() throws Exception {
     MvcResult result = this.mvc.perform(
-        // note that we were are testing the fuse REST end point here, not the IEX end point.
-        // the fuse end point in turn calls the IEX end point, which is WireMocked for this test.
-        org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/iex/symbols")
-            .accept(MediaType.APPLICATION_JSON_VALUE))
+            // note that we were are testing the fuse REST end point here, not the IEX end point.
+            // the fuse end point in turn calls the IEX end point, which is WireMocked for this test.
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/iex/symbols")
+                .accept(MediaType.APPLICATION_JSON_VALUE))
         .andExpect(status().isOk())
         // some simple validations, in practice I would expect these to be much more comprehensive.
         .andExpect(jsonPath("$[0].symbol", is("A")))
@@ -59,11 +91,11 @@ public class IexRestControllerTest extends ASpringTest {
   public void testGetLastTradedPrice() throws Exception {
 
     MvcResult result = this.mvc.perform(
-        org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-            .get("/iex/lastTradedPrice?symbols=FB")
-            // This URL will be hit by the MockMvc client. The result is configured in the file
-            // src/test/resources/wiremock/mappings/mapping-lastTradedPrice.json
-            .accept(MediaType.APPLICATION_JSON_VALUE))
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .get("/iex/lastTradedPrice?symbols=FB")
+                // This URL will be hit by the MockMvc client. The result is configured in the file
+                // src/test/resources/wiremock/mappings/mapping-lastTradedPrice.json
+                .accept(MediaType.APPLICATION_JSON_VALUE))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].symbol", is("FB")))
         .andExpect(jsonPath("$[0].price").value(new BigDecimal("186.34")))
@@ -74,11 +106,166 @@ public class IexRestControllerTest extends ASpringTest {
   public void testGetLastTradedPriceEmpty() throws Exception {
 
     MvcResult result = this.mvc.perform(
-        org.springframework.test.web.servlet.request.MockMvcRequestBuilders
-            .get("/iex/lastTradedPrice?symbols=")
-            .accept(MediaType.APPLICATION_JSON_VALUE))
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .get("/iex/lastTradedPrice?symbols=")
+                .accept(MediaType.APPLICATION_JSON_VALUE))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$", is(Collections.emptyList())))
         .andReturn();
+  }
+
+
+  @Test
+  public void testGetHistoricalPriceNoRangeNoDate() throws Exception {
+    //Tests functionality with No Range or Date
+    MvcResult result = this.mvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .get("/iex/historicalPrice?symbol=FB")
+                // This URL will be hit by the MockMvc client. The result is configured in the file
+                // src/test/resources/wiremock/mappings/mapping-lastTradedPrice.json
+                .accept(MediaType.APPLICATION_JSON_VALUE))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.symbol", is("FB")))
+        .andExpect(jsonPath("$.close").value(new BigDecimal("261.86")))
+        .andExpect(jsonPath("$.high").value(new BigDecimal("264.81")))
+        .andExpect(jsonPath("$.low").value(new BigDecimal("262.03")))
+        .andExpect(jsonPath("$.open").value(new BigDecimal("265.07")))
+        .andExpect(jsonPath("$.volume").value(new BigInteger("17624513")))
+        .andExpect(jsonPath("$.date").value("2022-10-11"))
+        .andReturn();
+
+  }
+
+  @Test
+  public void testGetHistoricalPriceWithRangeNoDate() throws Exception {
+    //Tests functionality with Range specified
+    MvcResult result = this.mvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .get("/iex/historicalPrice?symbol=FB&range=3m")
+                // This URL will be hit by the MockMvc client. The result is configured in the file
+                // src/test/resources/wiremock/mappings/mapping-lastTradedPrice.json
+                .accept(MediaType.APPLICATION_JSON_VALUE))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.symbol", is("FB")))
+        .andExpect(jsonPath("$.close").value(new BigDecimal("280.2")))
+        .andExpect(jsonPath("$.high").value(new BigDecimal("281.3")))
+        .andExpect(jsonPath("$.low").value(new BigDecimal("279.3")))
+        .andExpect(jsonPath("$.open").value(new BigDecimal("280.1")))
+        .andExpect(jsonPath("$.volume").value(new BigInteger("17624520")))
+        .andExpect(jsonPath("$.date").value("2022-10-11"))
+        .andReturn();
+  }
+
+  @Test
+  public void testGetHistoricalPriceNoRangeWithDate() throws Exception {
+    //Tests functionality with Date specified
+
+    Clock testClock =
+        Clock.fixed(LocalDate.parse("2022-11-20").atStartOfDay().toInstant(ZoneOffset.UTC),
+            ZoneId.systemDefault());
+
+    ReflectionTestUtils.setField(iexController, "clock", testClock);
+    MvcResult result = this.mvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .get("/iex/historicalPrice?symbol=FB&date=20190220")
+                // This URL will be hit by the MockMvc client. The result is configured in the file
+                // src/test/resources/wiremock/mappings/mapping-lastTradedPrice.json
+                .accept(MediaType.APPLICATION_JSON_VALUE))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.symbol", is("FB")))
+        .andExpect(jsonPath("$.close").value(new BigDecimal("270.2")))
+        .andExpect(jsonPath("$.high").value(new BigDecimal("271.34")))
+        .andExpect(jsonPath("$.low").value(new BigDecimal("272.31")))
+        .andExpect(jsonPath("$.open").value(new BigDecimal("270.34")))
+        .andExpect(jsonPath("$.volume").value(new BigInteger("17624356")))
+        .andExpect(jsonPath("$.date").value("2022-11-11"))
+        .andReturn();
+
+  }
+
+  @Test
+  public void testGetHistoricalPriceEmpty() throws Exception {
+    //Tests functionality with No symbol specified
+    // Note that this is the same as testing with no Symbol but adding a date|range
+    MvcResult result = this.mvc.perform(
+            org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+                .get("/iex/historicalPrice?symbol=")
+                .accept(MediaType.APPLICATION_JSON_VALUE))
+        .andExpect(status().is4xxClientError())
+        .andReturn();
+
+    ConstraintViolationException expectedException =
+        (ConstraintViolationException) result.getResolvedException();
+    assertNotNull(expectedException);
+    assertEquals("getHistoricalPrice.symbols: must not be empty", expectedException.getMessage());
+
+
+  }
+
+  @Test
+  public void testGetHistoricalPriceCaching() throws Exception {
+    //Tests caching functionality:
+
+
+    //First make two calls: one with an option and one without
+    MvcResult resultNoOpt = this.mvc.perform(
+        org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+            .get("/iex/historicalPrice?symbol=FB")
+            // This URL will be hit by the MockMvc client. The result is configured in the file
+            // src/test/resources/wiremock/mappings/mapping-lastTradedPrice.json
+            .accept(MediaType.APPLICATION_JSON_VALUE))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.symbol", is("FB")))
+        .andExpect(jsonPath("$.close").value(new BigDecimal("261.86")))
+        .andExpect(jsonPath("$.high").value(new BigDecimal("264.81")))
+        .andExpect(jsonPath("$.low").value(new BigDecimal("262.03")))
+        .andExpect(jsonPath("$.open").value(new BigDecimal("265.07")))
+        .andExpect(jsonPath("$.volume").value(new BigInteger("17624513")))
+        .andExpect(jsonPath("$.date").value("2022-10-11"))
+        .andReturn();
+
+    MvcResult resultWithOpt = this.mvc.perform(
+        org.springframework.test.web.servlet.request.MockMvcRequestBuilders
+            .get("/iex/historicalPrice?symbol=FB&range=3m")
+            // This URL will be hit by the MockMvc client. The result is configured in the file
+            // src/test/resources/wiremock/mappings/mapping-lastTradedPrice.json
+            .accept(MediaType.APPLICATION_JSON_VALUE))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.symbol", is("FB")))
+        .andExpect(jsonPath("$.close").value(new BigDecimal("280.2")))
+        .andExpect(jsonPath("$.high").value(new BigDecimal("281.3")))
+        .andExpect(jsonPath("$.low").value(new BigDecimal("279.3")))
+        .andExpect(jsonPath("$.open").value(new BigDecimal("280.1")))
+        .andExpect(jsonPath("$.volume").value(new BigInteger("17624520")))
+        .andExpect(jsonPath("$.date").value("2022-10-11"))
+        .andReturn();
+
+
+
+    //Then, Query the database, expect the request to have been stored:
+    List<IexHistoricalPriceRequest> noOpt = dbService.findByOption(null);
+    List<IexHistoricalPriceRequest> withOpt = dbService.findByOption("3m");
+
+    System.out.println("noOpt: (Size: " + noOpt.size() + ") " + noOpt);
+    System.out.println(withOpt);
+   // assertFalse(noOpt.isEmpty());
+    assertFalse(withOpt.isEmpty());
+
+    assertEquals(1,noOpt.size());
+    assertEquals(1,withOpt.size());
+
+    //Validate noOpt
+    IexHistoricalPriceRequest noOptReq = noOpt.get(0);
+    assertEquals("",noOptReq.getOption());
+    assertEquals("FB", noOptReq.getPrice().getSymbol());
+    assertEquals(new BigDecimal("261.86"), noOptReq.getPrice().getClose());
+
+
+    //Validate withOpt
+    IexHistoricalPriceRequest withOptReq = noOpt.get(0);
+    assertEquals("3m",withOptReq.getOption());
+    assertEquals("FB", withOptReq.getPrice().getSymbol());
+    assertEquals(new BigDecimal("280.2"), withOptReq.getPrice().getClose());
+
   }
 }
